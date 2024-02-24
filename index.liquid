@@ -1,0 +1,78 @@
+                        <div class="discount-code-container" style="display:none">
+                            <h3 class="h3">Enter Promo Or Discount Code:</h3>
+                            <div class="cart-discount input-wrapper">
+                              <label class="visually-hidden sr-only">Enter Discount Code</label>
+                              <input
+                                type="text"
+
+                                name="discount"
+                                class="form-control"
+                                value=""
+                                placeholder="Coupon code"
+                                form="cart"
+                              >
+                              <div class="apply-btn-wrapper">
+                                <button type="button" class="apply-discount-code">Apply</button>
+                              </div>
+                            </div>
+                          </div>
+
+                          <a href="javascript:void(0)" class="promo__card-btn">Add Promo</a>
+
+
+
+<script>
+  $(document).on('click', '.promo__card-btn', function () {
+    $('.discount-code-container').slideToggle('slow');
+  });
+
+  window.shopUrl = '{{ request.origin }}';
+  const discountSubmitBtn = $('.apply-discount-code'),
+    discountCodeInput = document.querySelector('[name="discount"]');
+
+  discountSubmitBtn.each(function (index) {
+    $(this).on('click', function (event) {
+      event.preventDefault();
+      const discountCode = $(this).closest('.cart-discount').find('[name="discount"]').val();
+      var btn = $(this);
+
+      // console.log("Tress", discountCode);
+
+      if (discountCode) {
+        btn.addClass('loading');
+        // Save the discount code as a session cookie
+        document.cookie = `discount_code=${discountCode}; path=/`;
+        // Send GET request to "/discount/[discountcode]"
+        fetch(`/discount/${discountCode}`)
+          .then(function () {
+            // After the discount code has been applied, force the cart to update so the discount is visible instantly
+            return fetch('/cart/update.js', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                updates: {},
+              }),
+            });
+          })
+          .then(function (data) {
+            fetch('?section_id=cart-drawer')
+              .then((response) => response.text())
+              .then((cartData) => {
+                btn.removeClass('loading');
+                var cart_html = $(cartData);
+                var cart_items = $('#CartDrawer', cart_html);
+                $('#CartDrawer').replaceWith(cart_items);
+                $('.drawer').addClass('active');
+                $('body').addClass('overflow-hidden');
+              });
+          })
+          .catch(function (error) {
+            console.error('Error:', error);
+          });
+      }
+    });
+  });
+
+</script>
